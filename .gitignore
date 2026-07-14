@@ -1,4 +1,3 @@
-venv/
 claudevenv/
 expense_tracker.db
 __pycache__/
