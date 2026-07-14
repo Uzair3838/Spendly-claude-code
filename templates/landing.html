@@ -2,6 +2,63 @@
 
 {% block title %}Spendly — Track Every Rupee{% endblock %}
 
+{% block head %}
+<style>
+    /* ---- "See how it works" modal ---- */
+    .video-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 15, 15, 0.78);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 2rem;
+    }
+    .video-modal.is-open { display: flex; }
+
+    .video-modal-frame {
+        position: relative;
+        width: 100%;
+        max-width: 960px;
+        background: #000;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    .video-modal-aspect {
+        position: relative;
+        width: 100%;
+        padding-top: 56.25%; /* 16:9 */
+    }
+
+    .video-modal-aspect iframe {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+    }
+
+    .video-modal-close {
+        position: absolute;
+        top: -44px;
+        right: 0;
+        background: transparent;
+        border: 0;
+        color: #fff;
+        font-size: 2rem;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        opacity: 0.85;
+        transition: opacity 0.2s;
+    }
+    .video-modal-close:hover { opacity: 1; }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <section class="hero">
@@ -17,7 +74,7 @@
         </p>
         <div class="hero-actions">
             <a href="{{ url_for('register') }}" class="btn-primary">Create free account</a>
-            <a href="#how-it-works" class="btn-secondary">See how it works</a>
+            <a href="#how-it-works" class="btn-secondary" id="how-it-works-link">See how it works</a>
         </div>
     </div>
     <div class="hero-visual">
@@ -96,4 +153,67 @@
     </div>
 </section>
 
+<div class="video-modal" id="video-modal" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="video-modal-frame">
+        <button class="video-modal-close" type="button" id="video-modal-close" aria-label="Close video">&times;</button>
+        <div class="video-modal-aspect">
+            <iframe id="video-modal-iframe"
+                    src=""
+                    data-src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0"
+                    title="See how Spendly works"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen></iframe>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var trigger = document.getElementById('how-it-works-link');
+    var modal = document.getElementById('video-modal');
+    var closeBtn = document.getElementById('video-modal-close');
+    var iframe = document.getElementById('video-modal-iframe');
+
+    if (!trigger || !modal || !closeBtn || !iframe) { return; }
+
+    function openModal() {
+        if (!iframe.src) {
+            iframe.src = iframe.getAttribute('data-src') + '&autoplay=1';
+        }
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        // Detach the iframe to fully stop playback (no YouTube API required)
+        iframe.src = '';
+    }
+
+    trigger.addEventListener('click', function (e) {
+        e.preventDefault();
+        openModal();
+    });
+
+    closeBtn.addEventListener('click', closeModal);
+
+    modal.addEventListener('click', function (e) {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modal.classList.contains('is-open')) {
+            closeModal();
+        }
+    });
+})();
+</script>
 {% endblock %}
