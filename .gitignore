@@ -1,5 +1,6 @@
 claudevenv/
 expense_tracker.db
+spendly.db
 __pycache__/
 *.pyc
 *.pyo
