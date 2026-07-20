@@ -59,9 +59,40 @@ def register():
     return redirect(url_for("profile"))
 
 
-@app.route("/login")
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    return render_template("login.html")
+    if request.method == "GET":
+        return render_template("login.html")
+
+    # POST: verify credentials and start a session.
+    email = request.form.get("email", "").strip()
+    password = request.form.get("password", "")
+
+    # Same generic error on every failure path — don't leak whether the email exists.
+    if not email or not password:
+        return render_template(
+            "login.html", error="Invalid email or password", email=email
+        ), 200
+
+    # Case-insensitive lookup, matching the convention from /register.
+    email = email.lower()
+
+    conn = get_db()
+    try:
+        row = conn.execute(
+            "SELECT id, name, password_hash FROM users WHERE email = ?", (email,)
+        ).fetchone()
+    finally:
+        conn.close()
+
+    if row is None or not check_password_hash(row["password_hash"], password):
+        return render_template(
+            "login.html", error="Invalid email or password", email=email
+        ), 200
+
+    session["user_id"] = row["id"]
+    session["user_name"] = row["name"]
+    return redirect(url_for("profile"))
 
 
 @app.route("/terms")
