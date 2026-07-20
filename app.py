@@ -20,6 +20,10 @@ def landing():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    # Already signed in? Don't show the form again.
+    if session.get("user_id"):
+        return redirect(url_for("landing"))
+
     if request.method == "GET":
         return render_template("register.html")
 
@@ -62,6 +66,9 @@ def register():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "GET":
+        # Already signed in? Don't show the form again.
+        if session.get("user_id"):
+            return redirect(url_for("landing"))
         return render_template("login.html")
 
     # POST: verify credentials and start a session.
@@ -92,7 +99,7 @@ def login():
 
     session["user_id"] = row["id"]
     session["user_name"] = row["name"]
-    return redirect(url_for("profile"))
+    return redirect(url_for("landing"))
 
 
 @app.route("/terms")
