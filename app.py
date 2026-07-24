@@ -99,7 +99,7 @@ def login():
 
     session["user_id"] = row["id"]
     session["user_name"] = row["name"]
-    return redirect(url_for("landing"))
+    return redirect(url_for("profile"))
 
 
 @app.route("/terms")
@@ -124,7 +124,119 @@ def logout():
 
 @app.route("/profile")
 def profile():
-    return "Profile page — coming in Step 4"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+
+    conn = get_db()
+    try:
+        # Load the signed-in user's own row.
+        user_row = conn.execute(
+            "SELECT id, name, email, created_at FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+
+        # Defensive: session references a user that no longer exists.
+        if user_row is None:
+            session.clear()
+            return redirect(url_for("login"))
+
+        # Total lifetime spend for this user only.
+        total_row = conn.execute(
+            "SELECT COALESCE(SUM(amount), 0) AS total "
+            "FROM expenses WHERE user_id = ?",
+            (user_id,),
+        ).fetchone()
+        total_spent = total_row["total"] or 0
+
+        # Total expense count for this user only.
+        count_row = conn.execute(
+            "SELECT COUNT(*) AS n FROM expenses WHERE user_id = ?",
+            (user_id,),
+        ).fetchone()
+        expense_count = count_row["n"] or 0
+
+        # Top category for this user only (by sum of amount).
+        top_row = conn.execute(
+            "SELECT category, SUM(amount) AS cat_total "
+            "FROM expenses WHERE user_id = ? "
+            "GROUP BY category ORDER BY cat_total DESC LIMIT 1",
+            (user_id,),
+        ).fetchone()
+        top_category = top_row["category"] if top_row else None
+
+        # Per-category totals for this user only.
+        cat_rows = conn.execute(
+            "SELECT category, SUM(amount) AS cat_total "
+            "FROM expenses WHERE user_id = ? "
+            "GROUP BY category ORDER BY cat_total DESC",
+            (user_id,),
+        ).fetchall()
+
+        # Recent transactions for this user only.
+        tx_rows = conn.execute(
+            "SELECT date, description, category, amount "
+            "FROM expenses WHERE user_id = ? "
+            "ORDER BY date DESC, id DESC LIMIT 10",
+            (user_id,),
+        ).fetchall()
+    finally:
+        conn.close()
+
+    # Derive initials from the user's name.
+    parts = (user_row["name"] or "").split()
+    if len(parts) >= 2:
+        initials = (parts[0][0] + parts[-1][0]).upper()
+    elif parts:
+        initials = parts[0][0].upper()
+    else:
+        initials = "?"
+
+    # Format member_since — "YYYY-MM-DD HH:MM:SS" → "15 March 2026".
+    import datetime
+    try:
+        joined = datetime.datetime.strptime(user_row["created_at"], "%Y-%m-%d %H:%M:%S")
+        member_since = f"{joined.day} {joined.strftime('%B %Y')}"
+    except (TypeError, ValueError):
+        member_since = (user_row["created_at"] or "")[:10]
+
+    # Compute per-category percentages against the user's top category total.
+    max_total = cat_rows[0]["cat_total"] if cat_rows else 0
+    categories = [
+        {
+            "name": row["category"],
+            "total": row["cat_total"],
+            "pct": int(round((row["cat_total"] / max_total) * 100)) if max_total else 0,
+        }
+        for row in cat_rows
+    ]
+
+    summary = {
+        "total_spent": total_spent,
+        "expense_count": expense_count,
+        "top_category": top_category,
+    }
+
+    transactions = [
+        {
+            "date": row["date"],
+            "description": row["description"] or "",
+            "category": row["category"],
+            "amount": row["amount"],
+        }
+        for row in tx_rows
+    ]
+
+    return render_template(
+        "profile.html",
+        user={"name": user_row["name"], "email": user_row["email"]},
+        initials=initials,
+        member_since=member_since,
+        summary=summary,
+        transactions=transactions,
+        categories=categories,
+    )
 
 
 @app.route("/expenses/add")
