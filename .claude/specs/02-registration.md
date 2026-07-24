@@ -1,7 +1,7 @@
 # Spec: Registration
 
 ## Overview
-Wire up the existing `/register` route so users can actually create an account on Spendly. The route currently only renders the form template; this step adds the POST handler that validates input, hashes the password with werkzeug, inserts a new row into the `users` table, signs the user in, shows a success message on a successful login and redirects to the dashboard placeholder. This is the second step of the course and is the entry point for all logged-in functionality (login, profile, expense CRUD).
+Wire up the existing `/register` route so users can actually create an account on Spendly. The route currently only renders the form template; this step adds the POST handler that validates input, hashes the password with werkzeug, inserts a new row into the `users` table, signs the user in, shows a success message on a successful login and redirects to the dashboard placeholder. This is the second step of the course and is the entry point for all logged-in functionality (login, profile, expense CRUD). 
 
 ## Depends on
 - Step 1 — Database setup (the `users` table with `id`, `name`, `email`, `password_hash` must exist; `get_db()` and `generate_password_hash` must be available from `database/db.py`)
