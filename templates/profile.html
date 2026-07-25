@@ -19,12 +19,12 @@
     <div class="profile-stats">
         <div class="mock-tile">
             <p class="mock-tile-label">Total spent</p>
-            <p class="mock-tile-value">₹{{ "{:,.2f}".format(summary.total_spent) }}</p>
+            <p class="mock-tile-value">Rs{{ "{:,.2f}".format(summary.total_spent) }}</p>
             <p class="mock-tile-meta">all time</p>
         </div>
         <div class="mock-tile">
             <p class="mock-tile-label">Transactions</p>
-            <p class="mock-tile-value">{{ summary.expense_count }}</p>
+            <p class="mock-tile-value">{{ summary.transaction_count }}</p>
             <p class="mock-tile-meta">logged</p>
         </div>
         <div class="mock-tile">
@@ -57,7 +57,7 @@
                     <td>{{ tx.date }}</td>
                     <td>{{ tx.description }}</td>
                     <td><span class="cat-badge cat-{{ tx.category | lower }}">{{ tx.category }}</span></td>
-                    <td class="profile-amount-col">₹{{ "{:,.2f}".format(tx.amount) }}</td>
+                    <td class="profile-amount-col">Rs{{ "{:,.2f}".format(tx.amount) }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -79,7 +79,7 @@
                 <div class="mock-bar-track">
                     <div class="mock-bar" style="width: {{ cat.pct }}%"></div>
                 </div>
-                <span class="profile-cat-total">₹{{ "{:,.2f}".format(cat.total) }}</span>
+                <span class="profile-cat-total">Rs{{ "{:,.2f}".format(cat.amount) }}</span>
             </div>
             {% endfor %}
         {% else %}
