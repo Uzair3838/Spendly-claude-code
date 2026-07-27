@@ -4,7 +4,14 @@ from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from database.db import get_db, init_db, seed_db
-from database.queries import get_category_breakdown, get_recent_transactions, get_summary_stats, get_user_by_id
+from database.queries import (
+    RANGE_PRESETS,
+    get_category_breakdown,
+    get_recent_transactions,
+    get_summary_stats,
+    get_user_by_id,
+    parse_date_range,
+)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY") or "dev-secret-change-me"
@@ -143,9 +150,19 @@ def profile():
     else:
         initials = "?"
 
-    summary = get_summary_stats(user_id)
-    transactions = get_recent_transactions(user_id)
-    categories = get_category_breakdown(user_id)
+    active_range = request.args.get("range", "")
+    from_str = request.args.get("from", "")
+    to_str = request.args.get("to", "")
+    start_date, end_date, filter_label, filter_error = parse_date_range(
+        active_range, from_str, to_str
+    )
+    # A malformed custom range falls back to "all time" data — keep the
+    # form open so the user can correct the inputs without losing them.
+    show_custom = active_range == "custom"
+
+    summary = get_summary_stats(user_id, start_date=start_date, end_date=end_date)
+    transactions = get_recent_transactions(user_id, start_date=start_date, end_date=end_date)
+    categories = get_category_breakdown(user_id, start_date=start_date, end_date=end_date)
 
     return render_template(
         "profile.html",
@@ -155,6 +172,13 @@ def profile():
         summary=summary,
         transactions=transactions,
         categories=categories,
+        active_range=active_range,
+        filter_label=filter_label,
+        filter_error=filter_error,
+        show_custom=show_custom,
+        range_presets=RANGE_PRESETS,
+        filter_from=from_str,
+        filter_to=to_str,
     )
 
 

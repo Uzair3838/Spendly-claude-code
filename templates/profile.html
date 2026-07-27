@@ -15,12 +15,34 @@
         </div>
     </div>
 
+    {# 1b. Date filter bar #}
+    <div class="profile-filter-bar">
+        <div class="filter-presets">
+            <a href="{{ url_for('profile') }}" class="filter-btn{% if not active_range %} active{% endif %}">All time</a>
+            {% for key, label in range_presets %}
+            <a href="{{ url_for('profile', range=key) }}" class="filter-btn{% if active_range == key %} active{% endif %}">{{ label }}</a>
+            {% endfor %}
+            <details class="filter-custom-wrapper"{% if show_custom %} open{% endif %}>
+                <summary class="filter-btn{% if active_range == 'custom' %} active{% endif %}">Custom</summary>
+                <form class="filter-custom-form" method="GET" action="{{ url_for('profile') }}">
+                    <input type="hidden" name="range" value="custom">
+                    <label class="filter-date-label">From <input type="date" name="from" value="{{ filter_from }}"></label>
+                    <label class="filter-date-label">To <input type="date" name="to" value="{{ filter_to }}"></label>
+                    <button type="submit" class="filter-apply-btn">Apply</button>
+                    {% if filter_error %}
+                    <p class="filter-error">{{ filter_error }}</p>
+                    {% endif %}
+                </form>
+            </details>
+        </div>
+    </div>
+
     {# 2. Summary stats row #}
     <div class="profile-stats">
         <div class="mock-tile">
             <p class="mock-tile-label">Total spent</p>
             <p class="mock-tile-value">Rs{{ "{:,.2f}".format(summary.total_spent) }}</p>
-            <p class="mock-tile-meta">all time</p>
+            <p class="mock-tile-meta">{{ filter_label }}</p>
         </div>
         <div class="mock-tile">
             <p class="mock-tile-label">Transactions</p>

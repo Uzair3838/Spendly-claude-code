@@ -94,4 +94,4 @@ summary:
 **Verdict**
 One of:
 - ✅ Ready for code review — all tests pass
-- ❌ Needs fixes — list the failing tests and their root causes
+- ❌ Needs fixes — list the failing tests and their root causes                                      
