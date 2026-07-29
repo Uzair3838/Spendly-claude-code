@@ -113,6 +113,8 @@ a { color: inherit; text-decoration: none; }
 
 .nav-cta:hover { background: var(--accent) !important; }
 
+.nav-links a.active { color: var(--ink); }
+
 /* ------------------------------------------------------------------ */
 /* Main                                                                */
 /* ------------------------------------------------------------------ */
@@ -515,6 +517,8 @@ a { color: inherit; text-decoration: none; }
 .form-input:focus { border-color: var(--accent); }
 
 .form-input::placeholder { color: var(--ink-faint); }
+
+.form-input[rows] { resize: vertical; min-height: 4.5rem; }
 
 .btn-submit {
     width: 100%;
@@ -940,6 +944,178 @@ a { color: inherit; text-decoration: none; }
     font-size: 0.82rem;
     color: var(--danger);
     flex-basis: 100%;
+}
+
+/* ------------------------------------------------------------------ */
+/* Analytics (coming soon)                                             */
+/* ------------------------------------------------------------------ */
+
+.analytics-section {
+    padding: 5rem 2rem 6rem;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+}
+
+.analytics-card {
+    position: relative;
+    background: var(--paper-card);
+    border: 0.667px solid #f3f4f6;
+    border-radius: 24px;
+    padding: 40.667px;
+    max-width: 512px;
+    width: 100%;
+    box-shadow: 0 20px 12.5px rgba(0,0,0,0.1), 0 8px 5px rgba(0,0,0,0.1);
+    overflow: hidden;
+    text-align: center;
+}
+
+/* Decorative green corner blobs (matching Figma's accent gradients). */
+.analytics-corner {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0.10;
+}
+
+.analytics-corner-tr {
+    top: 0;
+    right: 0;
+    border-bottom-left-radius: 9999px;
+    background: linear-gradient(135deg, #2d4a3e 0%, rgba(45, 74, 62, 0) 100%);
+}
+
+.analytics-corner-bl {
+    bottom: 0;
+    left: 0;
+    border-top-right-radius: 9999px;
+    background: linear-gradient(45deg, #2d4a3e 0%, rgba(45, 74, 62, 0) 100%);
+}
+
+.analytics-icon-wrap {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    margin: 0 auto 32px;
+}
+
+/* Soft green glow behind the icon tile. */
+.analytics-icon-glow {
+    position: absolute;
+    inset: 0;
+    background: #2d4a3e;
+    border-radius: 50%;
+    filter: blur(24px);
+    opacity: 0.20;
+}
+
+.analytics-icon-tile {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #2d4a3e 0%, #1a2f25 100%);
+    box-shadow: 0 10px 7.5px rgba(0,0,0,0.1), 0 4px 3px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.analytics-icon-img {
+    width: 48px;
+    height: 48px;
+    display: block;
+}
+
+/* "Coming Soon" pill — sits just below the icon, slightly overlapping. */
+.analytics-pill {
+    display: inline-block;
+    background: linear-gradient(90deg, #2d4a3e 0%, #3d5a4e 100%);
+    color: #ffffff;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    padding: 12px 22px;
+    border-radius: 9999px;
+    box-shadow: 0 4px 3px rgba(0,0,0,0.1), 0 2px 2px rgba(0,0,0,0.1);
+    margin-bottom: 28px;
+}
+
+.analytics-title {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 30px;
+    line-height: 36px;
+    letter-spacing: -0.01em;
+    color: transparent;
+    background: linear-gradient(90deg, #2d4a3e 0%, #1a2f25 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    margin-bottom: 16px;
+}
+
+.analytics-body {
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 26px;
+    color: #4a5565;
+    max-width: 384px;
+    margin: 0 auto 28px;
+}
+
+.analytics-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.analytics-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, #2d4a3e 0%, #3d5a4e 100%);
+    opacity: 0.51;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.analytics-dot-last {
+    opacity: 0.60;
+}
+
+.analytics-subline {
+    font-family: var(--font-body);
+    font-size: 12px;
+    line-height: 16px;
+    color: #99a1af;
+    letter-spacing: 0.3px;
+    margin-bottom: 40px;
+}
+
+/* Faint horizontal green gradient at the bottom of the card. */
+.analytics-bottom-line {
+    width: 128px;
+    height: 4px;
+    margin: 0 auto;
+    border-radius: 9999px;
+    opacity: 0.30;
+    background: linear-gradient(
+        90deg,
+        rgba(45, 74, 62, 0) 0%,
+        rgba(45, 74, 62, 0.5) 50%,
+        rgba(45, 74, 62, 0) 100%
+    );
+}
+
+@media (max-width: 600px) {
+    .analytics-card { padding: 2.25rem 1.5rem; }
+    .analytics-title { font-size: 24px; line-height: 30px; }
 }
 
 /* ------------------------------------------------------------------ */
