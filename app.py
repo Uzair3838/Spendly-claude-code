@@ -1,13 +1,14 @@
 import os
 from datetime import date
 
-from flask import Flask, redirect, render_template, request, session, url_for
+from flask import abort, Flask, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from database.db import get_db, init_db, seed_db
 from database.queries import (
     RANGE_PRESETS,
     get_category_breakdown,
+    get_expense_for_user,
     get_recent_transactions,
     get_summary_stats,
     get_user_by_id,
@@ -312,9 +313,123 @@ def _render_add_form(error, form, today_iso):
     ), 200
 
 
-@app.route("/expenses/<int:id>/edit")
+@app.route("/expenses/<int:id>/edit", methods=["GET", "POST"])
 def edit_expense(id):
-    return "Edit expense — coming in Step 8"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    # Confirm the session user still exists. If a user was deleted while a
+    # session cookie is still alive, drop the session and force a re-login
+    # rather than crashing on the foreign-key check later. Mirrors the
+    # pattern in add_expense() and profile().
+    user_row = get_user_by_id(session["user_id"])
+    if user_row is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    # Ownership check: returns None both when the row doesn't exist and
+    # when it's owned by another user. We deliberately treat both cases as
+    # 404 so the response doesn't leak whether the row exists at all.
+    expense = get_expense_for_user(id, session["user_id"])
+    if expense is None:
+        abort(404)
+
+    if request.method == "GET":
+        return render_template(
+            "edit_expense.html",
+            expense=expense,
+            categories=EXPENSE_CATEGORIES,
+        )
+
+    # POST: validate, update, redirect (POST-redirect-GET).
+    amount_raw = (request.form.get("amount") or "").strip()
+    category = (request.form.get("category") or "").strip()
+    date_str = (request.form.get("date") or "").strip()
+    description = (request.form.get("description") or "").strip()
+
+    # Hold the user's submitted values so the form can re-render them on
+    # validation failure without losing what was typed.
+    form = {
+        "amount": amount_raw,
+        "category": category,
+        "date": date_str,
+        "description": description,
+    }
+
+    # Reject obviously-too-long descriptions before any DB work. Keeps a
+    # single request from ballooning the expenses table. Same cap as add.
+    if len(description) > 500:
+        return _render_edit_form(
+            "Description must be 500 characters or fewer.",
+            form, expense,
+        )
+
+    # Amount: must parse to a float > 0, and below an upper cap so an
+    # accidental paste of a huge number doesn't corrupt the user's totals.
+    try:
+        amount = float(amount_raw)
+    except (TypeError, ValueError):
+        return _render_edit_form(
+            "Please enter a valid amount greater than zero.",
+            form, expense,
+        )
+    if amount <= 0:
+        return _render_edit_form(
+            "Amount must be greater than zero.",
+            form, expense,
+        )
+    if amount > MAX_AMOUNT:
+        return _render_edit_form(
+            "Amount is too large.",
+            form, expense,
+        )
+
+    # Category: must be one of the fixed 7 values.
+    if category not in EXPENSE_CATEGORIES:
+        return _render_edit_form(
+            "Please choose a valid category.",
+            form, expense,
+        )
+
+    # Date: must parse as YYYY-MM-DD.
+    try:
+        parsed_date = date.fromisoformat(date_str)
+    except ValueError:
+        return _render_edit_form(
+            "Please enter a valid date.",
+            form, expense,
+        )
+
+    conn = get_db()
+    try:
+        # The `AND user_id = ?` is a second ownership filter — defence in
+        # depth so a row that somehow becomes reachable can't be touched by
+        # the wrong user. The 404 check above is the primary one.
+        conn.execute(
+            "UPDATE expenses SET amount = ?, category = ?, date = ?, description = ? "
+            "WHERE id = ? AND user_id = ?",
+            (amount, category, parsed_date, description, id, session["user_id"]),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    return redirect(url_for("profile"))
+
+
+def _render_edit_form(error, form, expense):
+    """Re-render the edit-expense form with an error and the user's input.
+
+    The `expense` dict (with id) is passed so the form action URL is built
+    from the row, not from any user-controlled value.
+    """
+    return render_template(
+        "edit_expense.html",
+        error=error,
+        form=form,
+        expense=expense,
+        categories=EXPENSE_CATEGORIES,
+    ), 200
 
 
 @app.route("/expenses/<int:id>/delete")

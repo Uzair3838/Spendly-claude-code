@@ -87,6 +87,35 @@ def get_user_by_id(user_id):
         db.close()
 
 
+def get_expense_for_user(id, user_id):
+    """Return the expense row only if it's owned by user_id. None otherwise.
+
+    The `WHERE id = ? AND user_id = ?` filter is the ownership check — a
+    row owned by another user simply doesn't match, so the route can
+    treat both "doesn't exist" and "not yours" as the same 404 response
+    without leaking ownership.
+    """
+    db = get_db()
+    try:
+        row = db.execute(
+            "SELECT id, user_id, amount, category, date, description "
+            "FROM expenses WHERE id = ? AND user_id = ?",
+            (id, user_id),
+        ).fetchone()
+        if not row:
+            return None
+        return {
+            "id": row["id"],
+            "amount": row["amount"],
+            "category": row["category"],
+            # YYYY-MM-DD string — passes straight into <input type="date">
+            "date": row["date"],
+            "description": row["description"] or "",
+        }
+    finally:
+        db.close()
+
+
 def _date_clause(start_date, end_date):
     # Only add the clause when both bounds are real (not None). Empty strings,
     # empty tuples, and date objects all behave correctly under truthiness
@@ -133,11 +162,12 @@ def get_recent_transactions(user_id, limit=10, start_date=None, end_date=None):
     try:
         date_sql, date_params = _date_clause(start_date, end_date)
         rows = db.execute(
-            "SELECT date, description, category, amount FROM expenses WHERE user_id = ?" + date_sql + " ORDER BY date DESC, id DESC LIMIT ?",
+            "SELECT id, date, description, category, amount FROM expenses WHERE user_id = ?" + date_sql + " ORDER BY date DESC, id DESC LIMIT ?",
             (user_id,) + date_params + (limit,)
         ).fetchall()
         return [
             {
+                "id": row["id"],
                 "date": row["date"],
                 "description": row["description"] or "",
                 "category": row["category"],
