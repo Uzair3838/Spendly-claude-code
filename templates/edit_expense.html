@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Edit expense — Spendly{% endblock %}
+
+{% block content %}
+
+<section class="auth-section">
+    <div class="auth-container">
+
+        <div class="auth-header">
+            <h1 class="auth-title">Edit expense</h1>
+            <p class="auth-subtitle">Update the details and save</p>
+        </div>
+
+        <div class="auth-card">
+            {% if error %}
+            <div class="auth-error">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('edit_expense', id=expense.id) }}">
+                <div class="form-group">
+                    <label for="amount">Amount (Rs)</label>
+                    <input type="number" step="0.01" min="0.01" id="amount" name="amount"
+                           class="form-input" placeholder="250.00"
+                           value="{{ form.amount if form is defined and form.amount is not none else expense.amount }}"
+                           required>
+                </div>
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" name="category" class="form-input" required>
+                        <option value="" disabled {% if not (form is defined and form.category) and not expense.category %}selected{% endif %}>Choose a category</option>
+                        {# If the previous submission had an invalid category, show
+                           it as a non-selectable option so the user sees what they
+                           typed. The disabled attr + no value keeps it from being
+                           resubmitted as a real choice. #}
+                        {% if form is defined and form.category and form.category not in categories %}
+                        <option value="{{ form.category }}" disabled selected>{{ form.category }} (not allowed)</option>
+                        {% endif %}
+                        {% for c in categories %}
+                        <option value="{{ c }}" {% if (form is defined and form.category == c) or (not (form is defined and form.category) and expense.category == c) %}selected{% endif %}>{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="date">Date</label>
+                    <input type="date" id="date" name="date"
+                           class="form-input"
+                           value="{{ form.date if form is defined and form.date else expense.date }}"
+                           required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description (optional)</label>
+                    <textarea id="description" name="description"
+                              class="form-input" rows="3"
+                              placeholder="A short note about this expense">{{ form.description if form is defined and form.description is not none else expense.description }}</textarea>
+                </div>
+                <button type="submit" class="btn-submit">Save changes</button>
+            </form>
+        </div>
+
+        <p class="auth-switch">
+            <a href="{{ url_for('profile') }}">← Back to profile</a>
+        </p>
+
+    </div>
+</section>
+
+{% endblock %}
