@@ -537,6 +537,26 @@ a { color: inherit; text-decoration: none; }
 
 .btn-submit:hover { background: var(--accent); }
 
+/* Destructive action variant of .btn-submit. Same dimensions, but uses
+   --danger so the colour is visually distinct from "Save expense" /
+   "Save changes" buttons elsewhere in the app. */
+.btn-danger {
+    width: 100%;
+    padding: 0.7rem;
+    background: var(--danger);
+    color: var(--paper);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 0.5rem;
+}
+
+.btn-danger:hover { background: var(--ink); }
+
 .auth-switch {
     text-align: center;
     font-size: 0.875rem;
@@ -549,6 +569,61 @@ a { color: inherit; text-decoration: none; }
 }
 
 .auth-switch a:hover { text-decoration: underline; }
+
+/* ------------------------------------------------------------------ */
+/* Delete-expense confirmation page                                    */
+/* ------------------------------------------------------------------ */
+
+/* Read-only summary of the row that's about to be deleted. Reuses the
+   paper-card look from .profile-table but stays inside .auth-card, so
+   it sits visually nested under the title rather than as a separate
+   card. */
+.delete-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    background: var(--paper-warm);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+}
+
+.delete-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.92rem;
+}
+
+.delete-summary-label {
+    color: var(--ink-muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.delete-summary-value {
+    color: var(--ink-soft);
+    text-align: right;
+    word-break: break-word;
+}
+
+/* "Cancel" link sits below the submit button so the destructive action
+   remains the most prominent control on the page. */
+.delete-cancel {
+    text-align: center;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--ink-muted);
+}
+
+.delete-cancel a {
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.delete-cancel a:hover { text-decoration: underline; }
 
 /* ------------------------------------------------------------------ */
 /* Footer                                                              */
@@ -795,7 +870,7 @@ a { color: inherit; text-decoration: none; }
 
 .profile-actions-col {
     text-align: right;
-    width: 80px;
+    width: 130px;
 }
 
 .profile-edit-link {
@@ -806,6 +881,24 @@ a { color: inherit; text-decoration: none; }
 }
 
 .profile-edit-link:hover {
+    color: var(--ink);
+}
+
+/* Sibling gap between Edit and Delete links in the Actions cell.
+   Uses the adjacent-sibling combinator so the first link sits flush
+   and any second link is offset — keeps spacing out of the markup. */
+.profile-actions-col a + a {
+    margin-left: 0.75rem;
+}
+
+.profile-delete-link {
+    color: var(--danger);
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.profile-delete-link:hover {
     color: var(--ink);
 }
 

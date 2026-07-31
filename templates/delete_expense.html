@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Delete expense — Spendly{% endblock %}
+
+{% block content %}
+
+<section class="auth-section">
+    <div class="auth-container">
+
+        <div class="auth-header">
+            <h1 class="auth-title">Delete expense</h1>
+            <p class="auth-subtitle">This cannot be undone</p>
+        </div>
+
+        <div class="auth-card">
+
+            {# Read-only summary of the row about to be deleted. The values
+               come from get_expense_for_user() in database/queries.py, which
+               already filters on user_id — so showing them here is safe. #}
+            <div class="delete-summary">
+                <div class="delete-summary-row">
+                    <span class="delete-summary-label">Date</span>
+                    <span class="delete-summary-value">{{ expense.date }}</span>
+                </div>
+                <div class="delete-summary-row">
+                    <span class="delete-summary-label">Description</span>
+                    <span class="delete-summary-value">{{ expense.description or "—" }}</span>
+                </div>
+                <div class="delete-summary-row">
+                    <span class="delete-summary-label">Amount</span>
+                    <span class="delete-summary-value">Rs{{ "{:,.2f}".format(expense.amount) }}</span>
+                </div>
+                <div class="delete-summary-row">
+                    <span class="delete-summary-label">Category</span>
+                    <span class="delete-summary-value cat-badge cat-{{ expense.category | lower }}">{{ expense.category }}</span>
+                </div>
+            </div>
+
+            {# POST-only: GET visits to this URL only render the page above.
+               The form action URL is built from the row id so a user can't
+               tamper with which row gets deleted via the form target. #}
+            <form method="POST" action="{{ url_for('delete_expense', id=expense.id) }}">
+                <button type="submit" class="btn-danger">Yes, delete</button>
+            </form>
+
+            <p class="delete-cancel">
+                <a href="{{ url_for('profile') }}">Cancel</a>
+            </p>
+
+        </div>
+
+    </div>
+</section>
+
+{% endblock %}
