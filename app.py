@@ -34,6 +34,28 @@ EXPENSE_CATEGORIES = (
 MAX_AMOUNT = 1_000_000_000
 
 
+def _require_signed_in_user():
+    """Return the current user row, or a redirect Response to /login.
+
+    Two reasons this can bounce to /login:
+    1. No `user_id` in the session at all (logged out, or never logged in).
+    2. The session has a `user_id`, but the corresponding row in `users`
+       has been deleted out from under the cookie. In that case we drop
+       the stale session so the user gets a clean login rather than
+       crashing on a foreign-key check later.
+
+    Callers that don't need the row can ignore the first return value:
+    `redirect_resp = _require_signed_in_user()[1]; if redirect_resp: return redirect_resp`.
+    """
+    if not session.get("user_id"):
+        return None, redirect(url_for("login"))
+    user_row = get_user_by_id(session["user_id"])
+    if user_row is None:
+        session.clear()
+        return None, redirect(url_for("login"))
+    return user_row, None
+
+
 # ------------------------------------------------------------------ #
 # Routes                                                              #
 # ------------------------------------------------------------------ #
@@ -149,15 +171,9 @@ def logout():
 
 @app.route("/profile")
 def profile():
-    if not session.get("user_id"):
-        return redirect(url_for("login"))
-
-    user_id = session["user_id"]
-
-    user_data = get_user_by_id(user_id)
-    if user_data is None:
-        session.clear()
-        return redirect(url_for("login"))
+    user_data, redirect_resp = _require_signed_in_user()
+    if redirect_resp:
+        return redirect_resp
 
     parts = (user_data["name"] or "").split()
     if len(parts) >= 2:
@@ -208,19 +224,11 @@ def analytics():
 
 @app.route("/expenses/add", methods=["GET", "POST"])
 def add_expense():
-    if not session.get("user_id"):
-        return redirect(url_for("login"))
+    _, redirect_resp = _require_signed_in_user()
+    if redirect_resp:
+        return redirect_resp
 
     today_iso = date.today().isoformat()
-
-    # Confirm the session user still exists. If a user was deleted while a
-    # session cookie is still alive, drop the session and force a re-login
-    # rather than crashing on the foreign-key check later. Mirrors the
-    # pattern in profile().
-    user_row = get_user_by_id(session["user_id"])
-    if user_row is None:
-        session.clear()
-        return redirect(url_for("login"))
 
     if request.method == "GET":
         return render_template(
@@ -315,17 +323,9 @@ def _render_add_form(error, form, today_iso):
 
 @app.route("/expenses/<int:id>/edit", methods=["GET", "POST"])
 def edit_expense(id):
-    if not session.get("user_id"):
-        return redirect(url_for("login"))
-
-    # Confirm the session user still exists. If a user was deleted while a
-    # session cookie is still alive, drop the session and force a re-login
-    # rather than crashing on the foreign-key check later. Mirrors the
-    # pattern in add_expense() and profile().
-    user_row = get_user_by_id(session["user_id"])
-    if user_row is None:
-        session.clear()
-        return redirect(url_for("login"))
+    _, redirect_resp = _require_signed_in_user()
+    if redirect_resp:
+        return redirect_resp
 
     # Ownership check: returns None both when the row doesn't exist and
     # when it's owned by another user. We deliberately treat both cases as
@@ -432,9 +432,43 @@ def _render_edit_form(error, form, expense):
     ), 200
 
 
-@app.route("/expenses/<int:id>/delete")
+@app.route("/expenses/<int:id>/delete", methods=["GET", "POST"])
 def delete_expense(id):
-    return "Delete expense — coming in Step 9"
+    _, redirect_resp = _require_signed_in_user()
+    if redirect_resp:
+        return redirect_resp
+
+    # Ownership check: returns None both when the row doesn't exist and
+    # when it's owned by another user. We deliberately treat both cases as
+    # 404 so the response doesn't leak whether the row exists at all.
+    expense = get_expense_for_user(id, session["user_id"])
+    if expense is None:
+        abort(404)
+
+    if request.method == "GET":
+        # GET only renders the confirmation page — it does NOT delete.
+        # Deletion only happens on POST, which is the standard CSRF-defence
+        # posture for browser-driven deletes and means an accidental URL
+        # visit (or a prefetcher) cannot wipe a row.
+        return render_template("delete_expense.html", expense=expense)
+
+    # POST: verify ownership a second time (defence in depth), delete the
+    # row, redirect to /profile (POST-redirect-GET so browser back doesn't
+    # re-submit).
+    conn = get_db()
+    try:
+        # The `AND user_id = ?` is a second ownership filter — the 404
+        # check above is the primary one. Combined, a row owned by another
+        # user cannot be touched even if it somehow becomes reachable.
+        conn.execute(
+            "DELETE FROM expenses WHERE id = ? AND user_id = ?",
+            (id, session["user_id"]),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    return redirect(url_for("profile"))
 
 
 if __name__ == "__main__":
